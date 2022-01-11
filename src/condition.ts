@@ -18,7 +18,7 @@ export function GetInitialFocusedColumn() : vscode.ViewColumn {
 }
 
 export function InitializeFocusedFiles() : boolean {
-  focused_files.clear();
+  clear();
 
   let column = vscode.window.activeTextEditor?.viewColumn;
   if (column === undefined) {
@@ -34,4 +34,9 @@ export function InitializeFocusedFiles() : boolean {
     focused_files.set(editor.viewColumn, editor.document.fileName);
   }
   return true;
+}
+
+export function clear() {
+  focused_files.clear();
+  initial_focused_column = -1;
 }

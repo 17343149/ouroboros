@@ -21,7 +21,7 @@ function ExecSort() {
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand('sort.ouroboros', () => {
-    console.log("this is from sort!");
+    console.log("this is from ouroboros!");
     ExecSort();
   });
   context.subscriptions.push(disposable);

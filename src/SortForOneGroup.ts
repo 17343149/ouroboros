@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as common from "./common";
 import { FileInfo } from "./common";
 import * as cd from "./condition";
+import * as sc from "./SortCPP";
 
 export function SortThisGroup() {
   let files_info : Array<FileInfo> = [];
@@ -36,6 +37,12 @@ function GetAllFilesInfo(files_info : Array<FileInfo>) {
     }
   } 
 
+  if (sc.is_cpp(file_ext)) {
+    file_ext = "c";
+    sc.add_cpp(file_name, file_path);
+  } else if (sc.is_hpp(file_ext)) {
+    file_ext = "h";
+  }
   files_info.push(new FileInfo(file_path, file_name, file_ext, file_column));
   vscode.commands.executeCommand('workbench.action.nextEditor').then(() => {
     GetAllFilesInfo(files_info);
@@ -52,12 +59,29 @@ function MoveFiles(files_info : Array<FileInfo>) {
 }
 
 function Move2RightPos(files_info : Array<FileInfo>, move_idx : number) {
-  if (files_info.length > move_idx) {
+  if (move_idx <= files_info.length) {
     // move 文件
     let uri = vscode.Uri.file(files_info[move_idx - 1].path);
     vscode.commands.executeCommand('vscode.open', uri).then(() => {
       vscode.commands.executeCommand('moveActiveEditor', {to: "position", value: move_idx}).then(() => {
-        Move2RightPos(files_info, ++move_idx);
+        let file_name = files_info[move_idx - 1].name;
+        let file_ext = files_info[move_idx - 1].ext;
+        if (file_ext === sc.hpp_common_ext && sc.has_cpp(file_name)) {
+          // 插入对应的 cpp 文件到 h 文件后面
+          let cpp_path = sc.get_cpp_path(file_name);
+          if (cpp_path === undefined) {
+            common.ExceptionInSorting("cpp path undefined");
+            return;
+          }
+          let cpp_uri = vscode.Uri.file(cpp_path);
+          vscode.commands.executeCommand('vscode.open', cpp_uri).then(() => {
+            vscode.commands.executeCommand('moveActiveEditor', {to: "position", value: move_idx}).then(() => {
+              Move2RightPos(files_info, ++move_idx);
+            });
+          });
+        } else {
+          Move2RightPos(files_info, ++move_idx);
+        }
       });
     });
   } else {
@@ -91,10 +115,11 @@ function ReadySortNextGroup(column : vscode.ViewColumn) {
       } else if (editor.viewColumn === cd.GetInitialFocusedColumn()) {
         // 全部 group 完成排序
         OpenFocusFileAsync(editor.viewColumn);
-        cd.SetSorting(false);
+        common.FinishSort();
         return undefined;
       } else {
         // 排序下一个 group
+        sc.clear();
         SortThisGroup();
       }
     });

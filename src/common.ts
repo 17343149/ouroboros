@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as cd from "./condition";
+import * as sc from "./SortCPP";
 
 export class FileInfo {
   path: string;
@@ -47,5 +48,11 @@ export function ShowErrorMessage(err : string) {
 export function ExceptionInSorting(err : string) {
   console.error(err);
   ShowErrorMessage(err);
+  FinishSort();
+}
+
+export function FinishSort() {
+  sc.clear();
+  cd.clear();
   cd.SetSorting(false);
 }
