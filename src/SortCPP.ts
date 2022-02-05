@@ -1,5 +1,5 @@
-
-var cpp_set : Map<string, string> = new Map();
+// <file_name, idx>
+var hpp_set : Map<string, number> = new Map();
 
 var cpp_ext : Set<string> = new Set(["c", "cpp", "cc"]);
 var hpp_ext : Set<string> = new Set(["h", "hpp"]);
@@ -7,35 +7,35 @@ var hpp_ext : Set<string> = new Set(["h", "hpp"]);
 export var cpp_common_ext = "c";
 export var hpp_common_ext = "h";
 
-export function has_cpp(file_name : string) : boolean {
+export function has(file_name : string) : boolean {
   let idx = file_name.lastIndexOf('.');
   if (idx >= 0) {
-    return cpp_set.has(file_name.substring(0, idx - 1));
+    return hpp_set.has(file_name.substring(0, idx - 1));
   } else {
-    return cpp_set.has(file_name);
+    return hpp_set.has(file_name);
+  } 
+}
+
+export function idx(file_name : string) {
+  let idx = file_name.lastIndexOf('.');
+  if (idx >= 0) {
+    return hpp_set.get(file_name.substring(0, idx - 1));
+  } else {
+    return hpp_set.get(file_name);
   }
 }
 
-export function add_cpp(file_name : string, uri : string) {
+export function add(file_name : string, sorted_idx : number) {
   let idx = file_name.lastIndexOf('.');
   if (idx >= 0) {
-    cpp_set.set(file_name.substring(0, idx - 1), uri);
+    hpp_set.set(file_name.substring(0, idx - 1), sorted_idx);
   } else {
-    cpp_set.set(file_name, uri);
-  }
-}
-
-export function get_cpp_path(file_name : string) : string | undefined {
-  let idx = file_name.lastIndexOf('.');
-  if (idx >= 0) {
-    return cpp_set.get(file_name.substring(0, idx - 1));
-  } else {
-    return cpp_set.get(file_name);
+    hpp_set.set(file_name, sorted_idx);
   }
 }
 
 export function clear() {
-  cpp_set.clear();
+  hpp_set.clear();
 }
 
 export function is_cpp(file_ext : string) : boolean {

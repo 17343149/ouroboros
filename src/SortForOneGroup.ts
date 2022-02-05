@@ -38,10 +38,9 @@ function GetAllFilesInfo(files_info : Array<FileInfo>) {
   } 
 
   if (sc.is_cpp(file_ext)) {
-    file_ext = "c";
-    sc.add_cpp(file_name, file_path);
+    file_ext = sc.cpp_common_ext;
   } else if (sc.is_hpp(file_ext)) {
-    file_ext = "h";
+    file_ext = sc.hpp_common_ext;
   }
   files_info.push(new FileInfo(file_path, file_name, file_ext, file_column));
   vscode.commands.executeCommand('workbench.action.nextEditor').then(() => {
@@ -55,32 +54,45 @@ function MoveFiles(files_info : Array<FileInfo>) {
   }
   files_info.sort((a : FileInfo, b : FileInfo) => (a.ext === b.ext ? (a.name >= b.name? 1 : -1) : a.ext > b.ext ? 1 : -1));
   console.log(files_info);
-  Move2RightPos(files_info, 1);
+  RecordCPPInfo(files_info);
+  Move2RightPos(files_info, 1, 0);
 }
 
-function Move2RightPos(files_info : Array<FileInfo>, move_idx : number) {
-  if (move_idx <= files_info.length) {
+function RecordCPPInfo(files_info : Array<FileInfo>) {
+  for (let i = 0; i < files_info.length; ++i) {
+    if (sc.is_hpp(files_info[i].ext)) {
+      sc.add(files_info[i].name, i);
+    }
+  }
+}
+
+function Move2RightPos(files_info : Array<FileInfo>, move_idx : number, iter_idx : number) {
+  if (iter_idx < files_info.length) {
+    if (!files_info[iter_idx].need_sort) {
+      Move2RightPos(files_info, move_idx, ++iter_idx);
+      return;
+    }
     // move 文件
-    let uri = vscode.Uri.file(files_info[move_idx - 1].path);
+    let uri = vscode.Uri.file(files_info[iter_idx].path);
     vscode.commands.executeCommand('vscode.open', uri).then(() => {
       vscode.commands.executeCommand('moveActiveEditor', {to: "position", value: move_idx}).then(() => {
-        let file_name = files_info[move_idx - 1].name;
-        let file_ext = files_info[move_idx - 1].ext;
-        if (file_ext === sc.hpp_common_ext && sc.has_cpp(file_name)) {
-          // 插入对应的 cpp 文件到 h 文件后面
-          let cpp_path = sc.get_cpp_path(file_name);
-          if (cpp_path === undefined) {
-            common.ExceptionInSorting("cpp path undefined");
+        let file_name = files_info[iter_idx].name;
+        let file_ext = files_info[iter_idx].ext;
+        if (file_ext === sc.cpp_common_ext && sc.has(file_name)) {
+          let idx = sc.idx(file_name);
+          if (idx === undefined) {
+            common.ExceptionInSorting("hpp exists but idx undefined");
             return;
           }
-          let cpp_uri = vscode.Uri.file(cpp_path);
-          vscode.commands.executeCommand('vscode.open', cpp_uri).then(() => {
-            vscode.commands.executeCommand('moveActiveEditor', {to: "position", value: move_idx}).then(() => {
-              Move2RightPos(files_info, ++move_idx);
+          files_info[idx].need_sort = false;
+          let hpp_uri = vscode.Uri.file(files_info[idx].path);
+          vscode.commands.executeCommand('vscode.open', hpp_uri).then(() => {
+            vscode.commands.executeCommand('moveActiveEditor', {to: "position", value: move_idx + 1}).then(() => {
+              Move2RightPos(files_info, move_idx + 2, iter_idx + 1);
             });
-          });
+          }); 
         } else {
-          Move2RightPos(files_info, ++move_idx);
+          Move2RightPos(files_info, move_idx + 1, iter_idx + 1);
         }
       });
     });

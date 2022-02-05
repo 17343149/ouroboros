@@ -7,12 +7,14 @@ export class FileInfo {
   name: string;
   ext: string;
   column: vscode.ViewColumn;
+  need_sort: boolean;
 
   constructor(file_path: string, file_name: string, file_ext: string, file_column: vscode.ViewColumn|undefined) {
     this.path = file_path;
     this.name = file_name;
     this.ext = file_ext;
     this.column = file_column? file_column: -1;
+    this.need_sort = true;
   }
 }
 
